@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+.idea/
+.vscode/
+.ipynb_checkpoints/
+*.log
+data/data_set_1.csv
+data/*.zip
+artifacts/adc_raw.npy
