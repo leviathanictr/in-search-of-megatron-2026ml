@@ -8,7 +8,16 @@
 \usepackage{booktabs}
 \usepackage{hyperref}
 \usepackage{geometry}
+\usepackage{float}
+\usepackage{fancyhdr}
 \geometry{margin=2.5cm}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small УДК 539.1.07:004.85}
+\fancyhead[R]{\small In Search of Megatron, Kaggle \emph{2026-ml}}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
 
 \title{Расширенная PSD-разметка и ансамблевый классификатор
 с самообучением для разделения нейтронов и гамма-квантов
@@ -21,6 +30,9 @@
 \date{}
 
 \begin{document}
+\thispagestyle{fancy}
+\noindent\textsc{УДК 539.1.07:004.85}\hfill\textsc{Препринт}
+\vspace{0.5em}
 \maketitle
 
 \begin{abstract}
@@ -128,7 +140,18 @@ CAEN, дополненная метаданными $\mathrm{ENERGY}$ (длин�
 Принципиальное отличие от подхода, разбиравшегося в курсе на 10--11
 неделях~\cite{lr10,lr11},~--- мы дополнительно требуем чистую
 позицию пика $p \in [95, 115]$, что отсеивает <<поплывшие>> по
-времени события.
+времени события. Распределение $\mathrm{PSD}_\text{CAEN}$ по выборке
+с наложением выбранных порогов приведено на рис.~\ref{fig:psd}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{figures/fig1_psd_distribution.png}
+\caption{Распределение $\mathrm{PSD}_\text{CAEN}$ по выборке
+(амплитуда $> 50$). Виден малый гамма-пик в районе $0{,}08$ и
+основной нейтронный пик в районе $0{,}27$; зона неопределённости
+между ними при обучении не используется.}
+\label{fig:psd}
+\end{figure}
 
 \section{Признаковое описание сигнала}
 
@@ -143,6 +166,23 @@ CAEN, дополненная метаданными $\mathrm{ENERGY}$ (длин�
 разбирался в лонгриде 4-й недели~\cite{lr4}). Амплитуда определяется
 как $A = b - \min_t x(t)$, площадь~--- как сумма
 $S = \sum_t \mathrm{ReLU}(b - x(t))$.
+
+Усреднённые формы импульсов для классов <<нейтрон>> и
+<<гамма-квант>> (сигналы предварительно выровнены по пику и
+нормированы по амплитуде) показаны на рис.~\ref{fig:signals}.
+Чётко видно различие в скорости затухания, которое и лежит в основе
+всех PSD-подобных признаков.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{figures/fig3_sample_signals.png}
+\caption{Усреднённые формы импульсов для гамма-квантов и нейтронов.
+Сигналы выровнены по позиции пика и нормированы по амплитуде.
+У нейтрона заметно более медленное затухание после пика~--- это
+и есть <<толстый хвост>>, который улавливается отношением
+$Q_\text{short}/Q_\text{long}$.}
+\label{fig:signals}
+\end{figure}
 
 \subsection{Сегментные интегралы и доли}
 
@@ -319,6 +359,24 @@ PSD + одиночный GradientBoosting & $0{,}897$ \\
 \bottomrule
 \end{tabular}
 \end{center}
+
+Важности признаков по модели CatBoost из раунда 1 приведены на
+рис.~\ref{fig:feat-imp}. Видно, что доминируют наши <<руками
+сделанные>> признаки скорости затухания
+($\mathrm{frac}_\text{mid}$, $\mathrm{energy\_skew}$,
+$t_\text{rise}^{10\text{-}90}$), а сама CAEN-овская PSD занимает
+только пятое место~--- это подтверждает гипотезу, что физическая
+параметризация формы даёт более богатый сигнал, чем один числовой
+индикатор PSD.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\linewidth]{figures/fig2_feature_importance.png}
+\caption{Топ-18 признаков по важности модели CatBoost (раунд 1).
+Лидируют наши собственные сегментные и временные характеристики
+формы сигнала; CAEN-овская PSD занимает лишь пятое место.}
+\label{fig:feat-imp}
+\end{figure}
 
 В матрице ошибок (по разметке самой модели) доля переходов между
 классами доминируется самой неоднозначной зоной~--- событиями с PSD
